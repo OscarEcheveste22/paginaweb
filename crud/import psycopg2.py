@@ -1,4 +1,6 @@
 import psycopg2
+import time
+import threading
 
 # Crear la conexión a la base de datos PostgreSQL
 def conectar():
@@ -86,6 +88,16 @@ def eliminar_usuario(conn, id_usuario):
     except Exception as e:
         print(f"Error eliminando el usuario: {e}")
 
+# Función para crear un nuevo usuario cada cierto intervalo de tiempo
+def crear_usuarios_periodicamente(conn, intervalo):
+    i = 1
+    while True:
+        nombre = f'Usuario_{i}'
+        edad = 20 + (i % 10)  # Edad aleatoria entre 20 y 29
+        crear_usuario(conn, nombre, edad)
+        i += 1
+        time.sleep(intervalo)  # Esperar el intervalo de tiempo antes de crear otro usuario
+
 # Cerrar la conexión
 def cerrar_conexion(conn):
     conn.close()
@@ -97,28 +109,20 @@ if __name__ == '__main__':
     if conn:
         crear_tabla(conn)
 
-        # Crear usuarios
-        crear_usuario(conn, 'Juan', 25)
-        crear_usuario(conn, 'Ana', 30)
+        # Crear un nuevo hilo para ejecutar la función cada cierto tiempo
+        intervalo = 10  # Intervalo en segundos
+        hilo = threading.Thread(target=crear_usuarios_periodicamente, args=(conn, intervalo))
+        hilo.start()
 
-        # Leer todos los usuarios
-        print('Lista de usuarios:')
+        # Puedes realizar otras acciones mientras el hilo de creación automática corre en segundo plano
+        print('Usuarios iniciales:')
         leer_usuarios(conn)
 
-        # Actualizar un usuario
-        actualizar_usuario(conn, 1, 26)  # Cambiar la edad de Juan
-
-        # Leer todos los usuarios después de la actualización
-        print('Lista de usuarios después de la actualización:')
+        # Después de un tiempo, puedes seguir consultando los usuarios creados
+        time.sleep(30)  # Esperar 30 segundos
+        print('Usuarios después de 30 segundos:')
         leer_usuarios(conn)
 
-        # Eliminar un usuario
-        eliminar_usuario(conn, 2)  # Eliminar a Ana
-
-        # Leer todos los usuarios después de la eliminación
-        print('Lista de usuarios después de la eliminación:')
-        leer_usuarios(conn)
-
-        # Cerrar la conexión a la base de datos
+        # Para cerrar la conexión (puedes hacerlo cuando ya no necesites el hilo)
         cerrar_conexion(conn)
         
